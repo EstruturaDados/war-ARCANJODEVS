@@ -13,6 +13,12 @@ struct territorio{
     char cor [MAX_COR];
     int tropa;
 };
+struct missao{
+    int tipo_missao;             //0 - Destruir exército  || 1 - Conquistar territórios 
+    char cor_alvo[MAX_COR];      //Recebe a cor alvo que irá atacar
+    int progresso_conquista;     //Somente para a opção 1 (contador: 0 a 3 - territórios)
+}; 
+
 void limparBuffer(){
     /*Função para limpar o buffer:
     A variável C recebe a função getchar() que ler caractere. E essa função está dentro do while que chama repetidamente essa função enquanto o caractere lido for diferente de \n (enter) ou EOF(final do arquivo)*/
@@ -218,37 +224,44 @@ void verificar_alocacao_de_memoria(void* ponteiro){
 
 }
 
+int verificar_missao(struct territorio *mapa, const int num_territorio, struct missao *missao_atual){
+    for(int i = 0; i < num_territorio ; i++){
+        if(strcmp(mapa[i].cor, missao_atual->cor_alvo) == 0){
+            return 0;
+        }
+    }   
+    printf("\n🏆 Parabéns! Missão de Destruição concluída com sucesso! 🏆\n");
+    return 1;
+     
+}
+void menu_jogo(struct territorio *mapa, const int num_territorio, struct missao *minha_missao){
+    int opcao = -1;
 
-
-//Iniciando a função principal 
-int main(){
-    srand(time(NULL));
-
-    struct territorio *mapa;
-    int num_territorio;
+    int jogo_ativo = 1;
+   
     
 
+    while(jogo_ativo){
+        // 1. Exibir o Mapa
+        exibir_cartas(mapa, num_territorio);
+
+        
+        
+        printf("\n================== MENU WAR ====================\n");
+        printf("1 - Atacar\n");
+        printf("2 - Verificar Missão\n");
+        printf("0 - Sair\n");
+        printf("Escolha uma opção: ");
+        
+       
+        scanf("%d", &opcao);
+        limparBuffer();      
+        
     
-    printf("=============================================\n");
-    printf("B E M - V I N D O   A O   J O G O   W A R\n");
-    printf("=============================================\n");
-
-    printf("\nQuantos territórios você deseja cadastrar?\n");
-    scanf("%d", &num_territorio);
-    limparBuffer();
-
-    //Alocação da memória 
-    mapa = (struct territorio *)calloc (num_territorio, sizeof(struct territorio));
-
-    //Chama a função para verificar memoria.
-    verificar_alocacao_de_memoria(mapa);
-
-    cadastramento_de_cartas(mapa, num_territorio);
-
-    exibir_cartas(mapa, num_territorio);
-
-    int atacante;
-    int defensor;
+       switch (opcao){
+        case 1:
+             int atacante;
+            int defensor;
 
     do { 
         atacante = escolha_atacante(mapa, num_territorio);
@@ -261,12 +274,85 @@ int main(){
             printf("------------------------------------------------------------------\n");
         }
 
-    }while(strcmp(mapa[atacante - 1].cor, mapa[defensor - 1].cor) == 0);
+        }while(strcmp(mapa[atacante - 1].cor, mapa[defensor - 1].cor) == 0);
+
+        atacar(&mapa[atacante - 1], &mapa[defensor - 1]);
+        break;
+
+        case 2: 
+            int vitoria = verificar_missao(mapa, num_territorio, minha_missao);
+            if(vitoria == 1){
+                minha_missao->tipo_missao += 1;
+                jogo_ativo = 0; 
+            }   
+            
+            break;
+        case 0: 
+            jogo_ativo = 0;
+            break;
+        default:
+            printf("Opção inválida. Tente novamente!");
+            break;
+        }
+    }
+    printf("\nJogo encerrado. Até logo!\n");
     
+
+}
+void iniciar_jogo(struct territorio *mapa, const int num_territorio, struct missao *minha_missao){
+    //Inicialização automática dos territórios, cores e números de tropas.
     
-    atacar(&mapa[atacante - 1], &mapa[defensor - 1]);
+    //Criei uma Array para facilitar a criação do territórios e suas características.
+    const char nome_territorio[][MAX_NOME] = {"America","Africa","Europa","Asia"};
+    const char cor_territorio[][MAX_COR] = {"Azul","Azul","Verde","Verde"};
+    const int tropa_territorio[] = {5,4,3,3};
+
+    //O for irá preencher cada posição.
+    for(int i = 0 ; i < num_territorio; i++){
+        strcpy(mapa[i].nome, nome_territorio[i]);
+        strcpy(mapa[i].cor, cor_territorio[i]);
+        mapa[i].tropa = tropa_territorio[i];
+    }
+
+    minha_missao->tipo_missao = 0;
+    minha_missao->progresso_conquista = 0;
+    strcpy(minha_missao->cor_alvo, "Verde");
+    
+
+   printf("M I S S Ã O   D E S T R U I R   E X É R C I T O   %s\n", minha_missao->cor_alvo);
+
+}
+//Iniciando a função principal 
+int main(){
+    srand(time(NULL));
+
+    struct territorio *mapa;
+    struct missao *missao_atual;
+    int num_territorio = 4;
+    
+
+    
+    printf("=================================================================\n");
+    printf("============ B E M - V I N D O   A O   J O G O   W A R ==========\n");
+    printf("=================================================================\n");
+
    
-    free(mapa); //libera a memória alocada 
+    
+    //Alocação da memória 
+    mapa = (struct territorio *)calloc (num_territorio, sizeof(struct territorio));
+    missao_atual = (struct missao*)calloc (1, sizeof(struct missao));
+
+    //Chama a função para verificar memoria.
+    verificar_alocacao_de_memoria(mapa);
+    verificar_alocacao_de_memoria(missao_atual);
+
+    iniciar_jogo(mapa, num_territorio,missao_atual);
+    menu_jogo(mapa, num_territorio,missao_atual);
+
+
+    //libera a memória alocada
+    free(missao_atual);
+    free(mapa);  
     printf("\nMemória liberada com sucesso! Até mais!\n");
 
 return 0;
